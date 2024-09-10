@@ -113,13 +113,13 @@ def get_sentiment_reddit(ticker, urlT):
         check = reddit.submission(url=urlT)
         subComments = check.comments
     except:
-        return 'NA', 0, [], 0  # Return default values if an error occurs
+        return 'NA', 0, [], 0  
 
     for comment in subComments:
         try:
             bodyComment.append(comment.body)
         except:
-            continue  # Skip if there's an error with the comment
+            continue  
 
     if bodyComment:
         inputs = tokenizer(bodyComment, padding=True, truncation=True, return_tensors="pt")
@@ -141,15 +141,10 @@ def get_sentiment_reddit(ticker, urlT):
     return sentiment, probability, bodyComment, num_comments
 
 def scrape_yahoo_trending_tickers(url):
-    # Send a GET request to the URL
     response = requests.get(url)
-    # Check if the request was successful
     if response.status_code == 200:
-        # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
-        # print(soup.prettify())
         symbol_list = []
-        # Extract data using the provided XPath
         for link in soup.find_all('a'):
             symbol = (link.get('href'))
             if '/quote/' in symbol and '%' not in symbol:
@@ -159,9 +154,7 @@ def scrape_yahoo_trending_tickers(url):
 
         return symbol_list
 
-# URL of the Yahoo Finance trending tickers page
 yahoo_trending_tickers_url = 'https://finance.yahoo.com/trending-tickers'
-# Call the function with the URL
 test = scrape_yahoo_trending_tickers(yahoo_trending_tickers_url)
 symbol_list = []
 for symbol in test:
@@ -169,14 +162,12 @@ for symbol in test:
 print(symbol_list)
 
 for ticker in symbol_list:
-    # Get the data from the Yahoo Finance community
     url = f'https://finance.yahoo.com/quote/{ticker}/community?p=TSL{ticker}'
     print(url)
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0'})
     soup = BeautifulSoup(response.text, 'html.parser')
     data = json.loads(soup.select_one('#spotim-config').get_text(strip=True))['config']
 
-    # Construct the API request to fetch comments
     url = "https://api-2-0.spot.im/v1.0.0/conversation/read"
     payload = json.dumps({
       "conversation_id": data['spotId'] + data['uuid'].replace('_', '$'),
@@ -190,15 +181,12 @@ for ticker in symbol_list:
       'x-post-id': data['uuid'].replace('_', '$'),
     }
 
-    # Send the API request
     response = requests.post(url, headers=headers, data=payload)
     data = response.json()
 
-    # Initialize counters for Bullish and Bearish labels
     bullish_count = 0
     bearish_count = 0
 
-    # Iterate through the comments to count Bullish and Bearish labels
     for comment in data['conversation']['comments']:
         if 'additional_data' in comment and 'labels' in comment['additional_data'] and 'ids' in comment['additional_data']['labels']:
             labels = comment['additional_data']['labels']['ids']
@@ -254,7 +242,6 @@ for ticker in symbol_list:
 
     time.sleep(1)
 
-    # Create a DataFrame
     df = pd.DataFrame({
         'Symbol': [ticker],
         'Bullish_Count': [bullish_count],
